@@ -2,6 +2,7 @@ const APP_PREFIX = "BudgetTracker-";
 const VERSION = "version_01";
 const CACHE_NAME = APP_PREFIX + VERSION;
 const FILES_TO_CACHE = [
+  "/",
   "./index.html",
   "./css/styles.css",
   "./js/index.js",
@@ -13,48 +14,74 @@ const FILES_TO_CACHE = [
   "./icons/icon-152x152.png",
   "./icons/icon-192x192.png",
   "./icons/icon-384x384.png",
-  "./icons/icon-512x512.png"
+  "./icons/icon-512x512.png",
+  "/js/idb.js"
 ];
 
-self.addEventListener('install', function (e) {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
-      console.log('installing cache : ' + CACHE_NAME)
-      return cache.addAll(FILES_TO_CACHE)
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('installing offline cache : ' + CACHE_NAME)
+      return cache.addAll(FILES_TO_CACHE);
     })
   )
+  // .then(() => self.skipWaiting())
 });
 
-self.addEventListener('activate', function (e) {
-  e.waitUntil(
-    caches.keys().then(function (keyList) {
-      let cacheKeeplist = keyList.filter(function (key) {
-        return key.indexOf(APP_PREFIX);
-      });
-      cacheKeeplist.push(CACHE_NAME);
+self.addEventListener("activate", event => {
+  event.waitUntil(
+      caches
+      .keys()
+      .then(keyList => {
+        // return array of cache names that are old to delete
+        return Promise
+          .all(keyList.map(key => {
+            if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+              console.log("Deleting previous cached information", key);
+              return caches.delete(key);
+            }
+          }));
+      })
+    )
+    .then(() => self.clients.claim())
+});
 
-      return Promise.all(keyList.map(function (key, i) {
-        if (cacheKeeplist.indexOf(key) === -1) {
-          console.log('deleting cache : ' + keyList[i]);
-          return caches.delete(keyList[i]);
-        }
-      }));
+// fetch
+self.addEventListener("fetch", event => {
+  if (event.request.url.includes("/api/")) {
+    event.respondWith(
+      caches.open(DATA_CACHE_NAME).then(cache => {
+        return fetch(event.request)
+          .then(response => {
+
+              // if response ok, send to cache
+              if (response.status === 200) {
+                cache.put(event.request.url, response.clone());
+              }
+              return response;
+            }
+
+          )
+          .catch(err => {
+            // checks cache for match for more efficiency
+            return cache.match(event.request);
+          });
+      })
+      .catch(err => console.log(err))
+    );
+
+    return;
+  }
+
+  // if no match, response will fetch request and cache it
+  event.respondWith(
+    caches
+    .open(CACHE_NAME)
+    .then(cache => {
+      return cache.match(event.request)
+        .then(response => {
+          return response || fetch(event.request);
+        });
     })
   );
-});
-
-self.addEventListener('fetch', function (e) {
-  console.log('fetch request :' + e.request.url)
-  e.respondWith(
-    caches.match(e.request).then(function (request) {
-      if (request) {
-        console.log('responding with cache : ' + e.request.url);
-        return request
-      } else {
-        console.log('file is not cached, fetching : ' + e.request.url)
-        return fetch(e.request)
-
-      }
-    })
-  )
 });

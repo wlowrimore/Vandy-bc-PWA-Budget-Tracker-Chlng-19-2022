@@ -26,7 +26,7 @@
     }
   ],
   "name": "Budget Tracker App",
-  "short_name": "Budget",
+  "short_name": "budget",
   "theme_color": "#D3D3D3",
   "background_color": "#ffffff",
   "start_url": "/",
