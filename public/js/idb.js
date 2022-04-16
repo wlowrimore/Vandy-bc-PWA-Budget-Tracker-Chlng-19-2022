@@ -38,12 +38,12 @@ function saveRecord(record) {
 }
 
 function checkDatabase() {
-  const transaction = db.transaction.objectStore('pending');
+  const transaction = db.transaction.objectStore(['pending']);
   const store = transaction.objectStore('pending');
   const getAll = store.getAll();
 
 
-  // This function executes if attempt to submit new transaction with no internet connecti
+  // This function executes if attempt to submit new transaction with no internet connection
   getAll.onsuccess = function () {
     if (getAll.result.length > 0) {
       fetch('/api/transaction/bulk', {

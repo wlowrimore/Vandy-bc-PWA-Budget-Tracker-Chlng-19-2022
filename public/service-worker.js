@@ -1,12 +1,13 @@
 const APP_PREFIX = "BudgetTracker-";
 const VERSION = "version_01";
 const CACHE_NAME = APP_PREFIX + VERSION;
+const DATA_CACHE_NAME = CACHE_NAME + "_data";
 const FILES_TO_CACHE = [
   "/",
-  "./index.html",
+  "/index.html",
   "./css/styles.css",
   "./js/index.js",
-  "./manifest.json",
+  "/manifest.json",
   "./icons/icon-72x72.png",
   "./icons/icon-96x96.png",
   "./icons/icon-128x128.png",
@@ -19,31 +20,31 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener('install', event => {
+  // The promise that skipWaiting() returns can be safely ignored.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('installing offline cache : ' + CACHE_NAME)
       return cache.addAll(FILES_TO_CACHE);
     })
   )
-  // .then(() => self.skipWaiting())
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-      caches
-      .keys()
-      .then(keyList => {
-        // return array of cache names that are old to delete
-        return Promise
-          .all(keyList.map(key => {
-            if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
-              console.log("Deleting previous cached information", key);
-              return caches.delete(key);
-            }
-          }));
-      })
-    )
-    .then(() => self.clients.claim())
+    caches
+    .keys()
+    .then(keyList => {
+      // return array of cache names that are old to delete
+      return Promise
+        .all(keyList.map(key => {
+          if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+            console.log("Deleting previously cached information", key);
+            return caches.delete(key);
+          }
+        }));
+    })
+  )
 });
 
 // fetch
