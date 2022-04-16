@@ -38,19 +38,19 @@ function saveRecord(record) {
 }
 
 function checkDatabase() {
-  const transaction = db.transaction.objectStore(['pending']);
+  const transaction = db.transaction.objectStore(['pending'], 'readwrite');
   const store = transaction.objectStore('pending');
   const getAll = store.getAll();
 
 
-  // This function executes if attempt to submit new transaction with no internet connection
+  // attempt to submit new transaction with no internet connection
   getAll.onsuccess = function () {
     if (getAll.result.length > 0) {
       fetch('/api/transaction/bulk', {
           method: 'POST',
           body: JSON.stringify(getAll.result),
           headers: {
-            Accept: 'application, text/plain, */*',
+            Accept: 'application/json, text/plain, */*',
             'Content-Type': 'application/json'
           }
         })
@@ -58,16 +58,24 @@ function checkDatabase() {
         .then(() => {
           const transaction = db.transaction(['pending'], 'readwrite');
           const store = transaction.objectStore('pending');
+          const request = objectStore.getAll(['pending']);
+          request.onerror = event => {
+            console.log(err);
+          }
           store.clear();
-        })
-        .catch(err => {
-          console.log(err);
-
         });
     }
-  }
-};
+  };
+}
 
+function deletePending() {
+  const transaction = db.transaction(['pending'], 'readwrite');
+  const store = transaction.objectStore('pending');
+  store.clear();
+}
+request.onsuccess = event => {
+  console.log('Pending transactions captured!');
+}
 
 // listening for app to come back online
 window.addEventListener('online', checkDatabase);
