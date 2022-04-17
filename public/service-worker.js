@@ -45,6 +45,7 @@ self.addEventListener("activate", event => {
         }));
     })
   )
+  // sw takes control on first load (needed to pull in the offline data)
   self.clients.claim();
 });
 
